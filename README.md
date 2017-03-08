@@ -1,7 +1,7 @@
-rdb-fullstack
-=============
+Gamerater
+=========
 
-Common code for the Relational Databases and Full Stack Fundamentals courses
+A website for rating video games.
 
 # Installation:
 
@@ -9,36 +9,46 @@ Common code for the Relational Databases and Full Stack Fundamentals courses
 * Clone this repository.
 * Run `vagrant up` from /vagrant
 * Once the VM has been created, run `vagrant ssh` from /vagrant
-* Navigate back to the vagrant folder in the VM (by default use `cd /vagrant`)
-* Run `psql -f tournament/tournament.sql`
-* Run the following command for the unit tests: `python tournament/tournament_test.py`
+* Navigate back to the catalog folder in the VM (by default use `cd /vagrant/catalog`)
+* Run the server (i.e. `python gamerater.py`)
+* Open your browser to http://localhost:8000/gamerater/
 * ????
 * Profit
 
 ### Files Included:
 
-rdb-fullstack
-
->   fullstack-nanodegree-vm__________
->   |                               |
->   |- README.md                    |
->   |- vagrant                      |
->   |   |                           |
->   |   |- Vagrantfile              |
->   |   |- pgconfig.sh              |
->   |   |- catalog                  |
->   |   |   |- README.txt           |
->   |   |- forum                    |
->   |       |- forum.py             |
->   |       |- forum.sql            |
->   |       |- forumdb.py           |
->   |   |- tournament               |
->   |       |- tournament.py        |
->   |       |- tournament.sql       |
->   |       |- tournament_test.py   |
->   |_______________________________|
+> fullstack-nanodegree-vm
+>   |
+>   catalog
+>     |
+>     |- README.md
+>     |- client_secrets.json
+>     |- database_setup.py
+>     |- fb_client_secrets.json
+>     |- gamerater.py
+>     |- static
+>     |    |- bootstrap.min.css
+>     |    |- bootstrap-theme.min.css
+>     |    |- main.css
+>     |    |- img
+>     |        |- logo.png
+>     |        |- zero.png
+>     |- templates
+>          |- add_game.html
+>          |- all_base.html
+>          |- delete_rating.html
+>          |- game.html
+>          |- game_details.html
+>          |- home.html
+>          |- login.html
+>          |- messages.html
+>          |- my_games.html
+>          |- rate_game.html
+>          |- update_user.html
+>          |- user.html
+>          |- user_small.html 
 
 ### Authors:
 Paul Castillo
 
-Udacity
+Udacity, for the vagrant vm
