@@ -1,15 +1,16 @@
-from flask import Flask, render_template, url_for, redirect, request, flash, jsonify
-from flask import make_response
+from flask import (Flask, render_template, url_for, redirect, request,
+                   flash, jsonify, make_response)
+from flask import session as login_session
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Game, UsersGames, User
-from flask import session as login_session
 from datetime import datetime
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
+import random
 import json
-import random, string
+import string
 import requests
 
 app = Flask(__name__)
@@ -23,16 +24,19 @@ engine = create_engine('sqlite:///favoritegames.db')
 Base.metadata.create_all(engine)
 
 # Create database connector
-DBSession = sessionmaker(bind = engine)
+DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 # Methods used
 methods = ['GET', 'POST']
 
 # Helper functions
+
+
 def get_user_by_id(user_id):
     """Function for getting a user object given the user id."""
-    return session.query(User).filter_by(id = user_id).one()
+    return session.query(User).filter_by(id=user_id).one()
+
 
 def get_user_id_by_email(email):
     """
@@ -40,32 +44,38 @@ def get_user_id_by_email(email):
     id cannot be found, returns None.
     """
     try:
-        user = session.query(User).filter_by(email = email).one()
+        user = session.query(User).filter_by(email=email).one()
         return user.id
     except:
         return None
 
+
 def get_game_by_id(game_id):
     """Returns a game object with the given game_id."""
-    return session.query(Game).filter_by(id = game_id).one()
+    return session.query(Game).filter_by(id=game_id).one()
+
 
 def get_game_by_name(game_name):
     """Returns a game object with the given game_id."""
-    return session.query(Game).filter_by(name = game_name).one()
+    return session.query(Game).filter_by(name=game_name).one()
+
 
 def get_ratings_by_game_id(game_id):
     """Returns the ratings with the given game_id."""
-    return session.query(UsersGames).filter_by(game_id = game_id).all()
+    return session.query(UsersGames).filter_by(game_id=game_id).all()
+
 
 def get_ratings_by_user_id(user_id):
     """Returns the ratings for user with the given id."""
     return session.query(UsersGames).filter_by(
-        user_id = user_id).order_by(desc(UsersGames.rating)).all()
+        user_id=user_id).order_by(desc(UsersGames.rating)).all()
+
 
 def get_rating_by_user_and_game(user_id, game_id):
     """Returns the rating with the given user_id and game_id."""
     return session.query(UsersGames).filter(
         UsersGames.user_id == user_id, UsersGames.game_id == game_id).one()
+
 
 def get_top_game_by_user_id(user_id):
     """
@@ -73,14 +83,16 @@ def get_top_game_by_user_id(user_id):
     id user_id.
     """
     top_rating = session.query(UsersGames).filter_by(
-        user_id = user_id).order_by(desc(UsersGames.rating)).limit(1).one()
+        user_id=user_id).order_by(desc(UsersGames.rating)).limit(1).one()
     return get_game_by_id(top_rating.game_id)
+
 
 def get_latest_game_by_user_id(user_id):
     """Returns the game most recently rated by the given user_id."""
     latest_rating = session.query(UsersGames).filter_by(
-        user_id = user_id).order_by(desc(UsersGames.modified)).limit(1).one()
+        user_id=user_id).order_by(desc(UsersGames.modified)).limit(1).one()
     return get_game_by_id(latest_rating.game_id)
+
 
 def update_game_avg_rating(game_id):
     """Refreshes the average rating for game_id."""
@@ -90,7 +102,7 @@ def update_game_avg_rating(game_id):
 
     # Get the existing game ratings, then divide by num ratings
     existing_ratings = session.query(UsersGames).filter_by(
-        game_id = existing_game.id)
+        game_id=existing_game.id)
     ratings_count = existing_ratings.count()
 
     if ratings_count > 0:
@@ -116,6 +128,7 @@ def make_json_response(message, code):
     response.headers['Content-Type'] = 'application/json'
     return response
 
+
 def create_user(login_session):
     new_user = User(name=login_session['username'],
                     email=login_session['email'],
@@ -123,6 +136,7 @@ def create_user(login_session):
     session.add(new_user)
     session.commit()
     return new_user
+
 
 def login_or_create_user(login_session):
     """See if user exists, and create the user if not."""
@@ -136,7 +150,6 @@ def login_or_create_user(login_session):
 
     if user.name:
         login_session['username'] = user.name
-
 
     output = ''
     output += '<h1>Welcome, '
@@ -203,7 +216,7 @@ def gconnect():
 
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
-    params = {'access_token': credentials.access_token, 'alt' : 'json'}
+    params = {'access_token': credentials.access_token, 'alt': 'json'}
     answer = requests.get(userinfo_url, params=params)
     data = json.loads(answer.text)
 
@@ -217,6 +230,7 @@ def gconnect():
     flash("You are now logged in as %s" % login_session['username'])
     print "done!"
     return output
+
 
 @app.route("/gdisconnect")
 def gdisconnect():
@@ -242,6 +256,7 @@ def gdisconnect():
         return make_json_response(
             'Failed to revoke token for given user.', 400)
 
+
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     if request.args.get('state') != login_session['state']:
@@ -256,7 +271,8 @@ def fbconnect():
         open('fb_client_secrets.json', 'r').read())['web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = ('https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='
+    url = ('https://graph.facebook.com/oauth/access_token?grant_type='
+           'fb_exchange_token&client_id='
            '%s&client_secret=%s&fb_exchange_token=%s' % (
             app_id, app_secret, access_token))
     h = httplib2.Http()
@@ -270,8 +286,6 @@ def fbconnect():
     url = 'https://graph.facebook.com/v2.4/me?%s&fields=name,id,email' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
-    #print "url sent for API access: %s" % url
-    #print "API JSON result: %s" % result
     data = json.loads(result)
     login_session['provider'] = 'facebook'
     login_session['username'] = data["name"]
@@ -294,12 +308,14 @@ def fbconnect():
     print "done!"
     return output
 
+
 @app.route('/fbdisconnect/')
 def fbdisconnect():
     facebook_id = login_session['facebook_id']
     url = 'https://graph.facebook.com/%s/permissions' % facebook_id
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
+
 
 @app.route('/disconnect/')
 def disconnect():
@@ -323,6 +339,7 @@ def disconnect():
         flash("You were not logged in to begin with!")
         redirect(url_for('gamerater_home'))
 
+
 @app.route('/login/')
 def show_login():
     state = ''.join(random.choice(
@@ -330,7 +347,8 @@ def show_login():
     login_session['state'] = state
     return render_template('login.html', STATE=state)
 
-@app.route('/update_user', methods = methods)
+
+@app.route('/update_user', methods=methods)
 def update_user():
     # If the user isn't logged in, redirect to login
     if not login_session:
@@ -349,11 +367,11 @@ def update_user():
         if not username:
             flash("Please enter a username.")
             return render_template(
-                'update_user.html', username = username)
+                'update_user.html', username=username)
 
         # Get the user and update
         user = session.query(User).filter_by(
-            id = login_session['user_id']).one()
+            id=login_session['user_id']).one()
 
         print "adding username to session"
         user.name = username
@@ -365,7 +383,8 @@ def update_user():
         return redirect(url_for('my_games'))
 
     return render_template(
-        'update_user.html', username = login_session['username'])
+        'update_user.html', username=login_session['username'])
+
 
 @app.route('/')
 @app.route('/gamerater/')
@@ -376,10 +395,10 @@ def gamerater_home():
     recent_games = []
     for rating in recent_ten_ratings:
         recent_game = {
-            "user" : get_user_by_id(rating.user_id),
-            "game" : get_game_by_id(rating.game_id),
-            "rating" : rating.rating,
-            "modified" : rating.modified
+            "user": get_user_by_id(rating.user_id),
+            "game": get_game_by_id(rating.game_id),
+            "rating": rating.rating,
+            "modified": rating.modified
         }
         recent_games.append(recent_game)
 
@@ -401,23 +420,23 @@ def gamerater_home():
             latest_game = "This user does not have a rating yet."
 
         user_data = {
-            'user' : user,
-            'favorite_game' : favorite_game,
-            'latest_game' : latest_game
+            'user': user,
+            'favorite_game': favorite_game,
+            'latest_game': latest_game
         }
         users.append(user_data)
 
     return render_template("home.html",
-                           recent_games = recent_games,
-                           top_ten_games = top_ten_games,
-                           users = users)
+                           recent_games=recent_games,
+                           top_ten_games=top_ten_games,
+                           users=users)
+
 
 @app.route('/gamerater/json/')
 def gamerater_home_json():
     # Get the 10 most recent games
     recent_ten_ratings = session.query(UsersGames).order_by(
         desc(UsersGames.modified)).limit(10)
-
 
     # Get the 10 highest ratings
     top_ten_games = session.query(Game).order_by(
@@ -440,20 +459,21 @@ def game_info(game_id):
     except:
         flash("We're sorry, that's not a valid game id!")
         return redirect(url_for('gamerater_home'))
-    
+
     # Get the ratings info
     rating_data = get_ratings_by_game_id(game_id=game_id)
-    
+
     # Set up data for the page
     ratings = []
     for rating in rating_data:
         user_rating = {
-            "user" : get_user_by_id(rating.user_id),
-            "user_id" : rating.user_id,
-            "rating" : rating.rating
+            "user": get_user_by_id(rating.user_id),
+            "user_id": rating.user_id,
+            "rating": rating.rating
         }
         ratings.append(user_rating)
-    return render_template("game.html", game = game, ratings = ratings)
+    return render_template("game.html", game=game, ratings=ratings)
+
 
 @app.route('/gamerater/game/<int:game_id>/json/')
 def game_info_json(game_id):
@@ -487,8 +507,8 @@ def user_info(user_id):
         ratings = []
         for rating in users_ratings:
             new_rating = {
-                'rating' : rating.rating,
-                'game' : get_game_by_id(rating.game_id)
+                'rating': rating.rating,
+                'game': get_game_by_id(rating.game_id)
             }
             ratings.append(new_rating)
     else:
@@ -501,9 +521,10 @@ def user_info(user_id):
         game = None
 
     return render_template("user.html",
-                           user = user,
-                           ratings = ratings,
-                           game = game)
+                           user=user,
+                           ratings=ratings,
+                           game=game)
+
 
 @app.route('/gamerater/user/<int:user_id>/json/')
 def user_info_json(user_id):
@@ -522,8 +543,7 @@ def user_info_json(user_id):
         return jsonify(user.serialize)
 
 
-
-@app.route('/gamerater/add-game/', methods = methods)
+@app.route('/gamerater/add-game/', methods=methods)
 def add_game():
     # Require the user to be logged in
     if 'username' not in login_session:
@@ -539,23 +559,23 @@ def add_game():
         category = request.form['category']
         description = request.form['description']
         rating = request.form['rating']
-        
+
         # Double check if the game actually exists
         try:
             existing_game = get_game_by_name(game_name=game_name)
             flash("That game already exists! Please add a rating.")
             return redirect(url_for('rate_game',
-                                    game_name = game_name,
-                                    rating = rating))
+                                    game_name=game_name,
+                                    rating=rating))
         except:
             # If any fields are missing return an error
             if not (game_name and category and description):
                 flash('Please enter text in each field.')
                 return render_template('add_game.html',
-                                       game_name = game_name,
-                                       category = category,
-                                       description = description,
-                                       rating = rating)
+                                       game_name=game_name,
+                                       category=category,
+                                       description=description,
+                                       rating=rating)
 
             # If the rating is not an integer between 0 and 10 return
             # an error
@@ -564,16 +584,16 @@ def add_game():
                 if rating_int > 10 or rating_int < 0:
                     flash('Please ensure the rating is a number from 1 to 10.')
                     return render_template('rate_game.html',
-                                           game_name = game_name,
-                                           rating = rating)
+                                           game_name=game_name,
+                                           rating=rating)
             except:
                 flash('Please ensure the rating is a number from 1 to 10.')
                 return render_template('rate_game.html',
-                                        game_name = game_name,
-                                        rating = rating)
-            
+                                       game_name=game_name,
+                                       rating=rating)
+
             # Add new game and new rating
-            new_game = Game(name = game_name,
+            new_game = Game(name=game_name,
                             category=category,
                             description=description,
                             avg_rating=rating_int,
@@ -581,10 +601,10 @@ def add_game():
             session.add(new_game)
             session.commit()
             game_to_rate = get_game_by_name(game_name=game_name)
-            new_rating = UsersGames(user_id = login_session['user_id'],
-                                    game_id = game_to_rate.id,
-                                    rating = rating_int,
-                                    modified = datetime.now())
+            new_rating = UsersGames(user_id=login_session['user_id'],
+                                    game_id=game_to_rate.id,
+                                    rating=rating_int,
+                                    modified=datetime.now())
             session.add(new_rating)
             session.commit()
             flash('%s has been rated!' % game_to_rate.name)
@@ -597,8 +617,9 @@ def add_game():
         if not rating:
             rating = ""
         return render_template("add_game.html",
-                               game_name = game_name,
-                               rating = rating)
+                               game_name=game_name,
+                               rating=rating)
+
 
 @app.route('/gamerater/rate-game/', methods=methods)
 def rate_game():
@@ -618,8 +639,8 @@ def rate_game():
         if not (game_name and rating):
             flash('Please enter both a game name and rating.')
             return render_template('rate_game.html',
-                                   game_name = game_name,
-                                   rating = rating)
+                                   game_name=game_name,
+                                   rating=rating)
 
         # If the rating is not an integer between 0 and 10 return
         # an error
@@ -628,13 +649,13 @@ def rate_game():
             if rating_int > 10 or rating_int < 0:
                 flash('Please ensure the rating is a number from 1 to 10.')
                 return render_template('rate_game.html',
-                                       game_name = game_name,
-                                       rating = rating)
+                                       game_name=game_name,
+                                       rating=rating)
         except:
             flash('Please ensure the rating is a number from 1 to 10.')
             return render_template('rate_game.html',
-                                   game_name = game_name,
-                                   rating = rating)
+                                   game_name=game_name,
+                                   rating=rating)
 
         # Try getting the existing game. If it doesn't exist,
         # redirect the user to add_game
@@ -642,14 +663,14 @@ def rate_game():
             existing_game = get_game_by_name(game_name=game_name)
         except:
             return redirect(url_for('add_game',
-                                    game_name = game_name,
-                                    rating = rating))
+                                    game_name=game_name,
+                                    rating=rating))
 
         # Check if there's an existing rating. Update if so.
         try:
             existing_rating = get_rating_by_user_and_game(
-                user_id = login_session['user_id'],
-                game_id = existing_game.id)
+                user_id=login_session['user_id'],
+                game_id=existing_game.id)
             existing_rating.rating = rating_int
             existing_rating.modified = datetime.now()
             session.add(existing_rating)
@@ -658,10 +679,10 @@ def rate_game():
                 existing_game.name, existing_rating.rating))
         except:
             # Create a new rating if there isn't an existing one
-            new_rating = UsersGames(user_id = login_session['user_id'],
-                                    game_id = existing_game.id,
-                                    rating = rating_int,
-                                    modified = datetime.now())
+            new_rating = UsersGames(user_id=login_session['user_id'],
+                                    game_id=existing_game.id,
+                                    rating=rating_int,
+                                    modified=datetime.now())
             session.add(new_rating)
             session.commit()
             flash("%s has been rated." % existing_game.name)
@@ -671,7 +692,6 @@ def rate_game():
 
         return redirect(url_for('my_games'))
 
-    
     game_name = request.args.get('game_name')
     rating = request.args.get('rating')
     if not game_name:
@@ -679,8 +699,9 @@ def rate_game():
     if not rating:
         rating = ""
     return render_template("rate_game.html",
-                           game_name = game_name,
-                           rating = rating)
+                           game_name=game_name,
+                           rating=rating)
+
 
 @app.route('/gamerater/delete_rating/<int:game_id>/', methods=methods)
 def delete_rating(game_id):
@@ -700,8 +721,8 @@ def delete_rating(game_id):
     # Get the rating. Redirect to rate game if it doesn't exist
     try:
         rating_to_delete = get_rating_by_user_and_game(
-            user_id = login_session['user_id'],
-            game_id = game.id)
+            user_id=login_session['user_id'],
+            game_id=game.id)
     except:
         flash("Sorry, it looks like you haven't rated that game yet."
               "Would you like to?")
@@ -722,7 +743,8 @@ def delete_rating(game_id):
         flash("Your rating for %s has been deleted." % game.name)
         return redirect(url_for('my_games'))
 
-    return render_template('delete_rating.html', game = game)
+    return render_template('delete_rating.html', game=game)
+
 
 @app.route('/gamerater/my-games/')
 def my_games():
@@ -747,8 +769,8 @@ def my_games():
         ratings = []
         for rating in users_ratings:
             new_rating = {
-                'rating' : rating.rating,
-                'game' : get_game_by_id(rating.game_id)
+                'rating': rating.rating,
+                'game': get_game_by_id(rating.game_id)
             }
             ratings.append(new_rating)
     else:
@@ -763,9 +785,10 @@ def my_games():
         game = None
 
     return render_template("my_games.html",
-                           user = user,
-                           ratings = ratings,
-                           game = game)
+                           user=user,
+                           ratings=ratings,
+                           game=game)
+
 
 @app.route('/gamerater/my-games/json/')
 def my_games_json():
@@ -787,8 +810,8 @@ def my_games_json():
         return jsonify(user.serialize)
 
 
-
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
-    app.run(host = '0.0.0.0', port = 8000)
+    app.run(host='0.0.0.0', port=8000)
+    
