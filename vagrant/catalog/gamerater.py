@@ -1,20 +1,18 @@
 from flask import Flask, render_template, url_for, redirect, request, flash, jsonify
-app = Flask(__name__)
-
+from flask import make_response
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Game, UsersGames, User
-
 from flask import session as login_session
-import random, string
 from datetime import datetime
-
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 import json
-from flask import make_response
+import random, string
 import requests
+
+app = Flask(__name__)
 
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
@@ -94,10 +92,14 @@ def update_game_avg_rating(game_id):
     existing_ratings = session.query(UsersGames).filter_by(
         game_id = existing_game.id)
     ratings_count = existing_ratings.count()
-    all_ratings = []
-    for rating in existing_ratings.all():
-        all_ratings.append(rating.rating)
-    avg_rating = float(sum(all_ratings)) / ratings_count
+
+    if ratings_count > 0:
+        all_ratings = []
+        for rating in existing_ratings.all():
+            all_ratings.append(rating.rating)
+        avg_rating = float(sum(all_ratings)) / ratings_count
+    else:
+        avg_rating = 0
     existing_game.avg_rating = avg_rating
     existing_game.modified = datetime.now()
     session.add(existing_game)
