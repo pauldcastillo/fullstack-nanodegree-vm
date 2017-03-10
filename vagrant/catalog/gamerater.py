@@ -16,11 +16,11 @@ import requests
 app = Flask(__name__)
 
 CLIENT_ID = json.loads(
-    open('client_secrets.json', 'r').read())['web']['client_id']
+    open('catalog/client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Gamerater"
 
 # Create database
-engine = create_engine('sqlite:///favoritegames.db')
+engine = create_engine('postgres://wudrmwxkcfoiiq:381bb1a212330a60268c5775405b4317572995f0398e96054b1624a30dbb7f42@ec2-54-227-237-223.compute-1.amazonaws.com:5432/d60euolama0dts')
 Base.metadata.create_all(engine)
 
 # Create database connector

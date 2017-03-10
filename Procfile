@@ -1,1 +1,1 @@
-web: gunicorn /vagrant/catalog/gamerater:app
+web: gunicorn vagrant.catalog.gamerater:app

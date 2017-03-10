@@ -138,7 +138,7 @@ class UsersGames(Base):
 
 
 ##################### EOF code
-engine = create_engine('sqlite:///favoritegames.db')
+engine = create_engine('postgres://wudrmwxkcfoiiq:381bb1a212330a60268c5775405b4317572995f0398e96054b1624a30dbb7f42@ec2-54-227-237-223.compute-1.amazonaws.com:5432/d60euolama0dts')
 
 Base.metadata.create_all(engine)
 
