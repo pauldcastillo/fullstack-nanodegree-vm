@@ -1,0 +1,1 @@
+web: gunicorn /vagrant/catalog/gamerater:app
