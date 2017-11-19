@@ -1,7 +1,11 @@
 Logs Analysis
 =============
 
-Code for analyzing news data database.
+Code for analyzing newsdata database.
+
+Uses a function, `db_execution`, for interacting with psycopg2 and returning result.
+
+Utilizing `db_execution`, three functions get one of the following: the three articles with the most views, all of the authors ordered by their number of views, and the days that had more than 1% of the requests having errors.
 
 # Installation and Use
 
