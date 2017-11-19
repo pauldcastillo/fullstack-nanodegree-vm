@@ -3,6 +3,7 @@
 #
 import psycopg2
 
+
 def db_execute(command):
     """
     Takes a SQL command as a string, then connects to the db 'news',
@@ -23,7 +24,8 @@ def db_execute(command):
     if result:
         return result
 
-## Get posts from database.
+
+# Get posts from database.
 def get_most_popular_articles():
     """
     Gets the top three most popular articles from the db,
@@ -38,8 +40,8 @@ def get_most_popular_articles():
         """)
 
     max_title_len = max(len(top_articles[0][0]),
-                       len(top_articles[1][0]),
-                       len(top_articles[2][0]))
+                        len(top_articles[1][0]),
+                        len(top_articles[2][0]))
 
     top_bot_of_table = (max_title_len + 13) * "-"
     post_titles_spaces = (max_title_len - 4) * " "
@@ -67,6 +69,7 @@ def get_most_popular_articles():
                       (max_title_len - len(top_articles[1][0])) * " ",
                       (max_title_len - len(top_articles[2][0])) * " "
                       ))
+
 
 def get_authors_by_popularity():
     """
@@ -130,6 +133,7 @@ def get_authors_by_popularity():
                       views_col_dashes,
                       authors_to_return[12:-1]))
 
+
 def get_one_percent_error_days():
     """
     Gets the days when more than 1 percent of the requests resulted
@@ -137,7 +141,7 @@ def get_one_percent_error_days():
     """
     days = db_execute(
         """
-        SELECT 
+        SELECT
             TO_CHAR(errors_per_day.date, 'MONTHDD,YYYY') AS date,
             ROUND(
                 errors_per_day.errors * 100.0 / total_logs_per_day.requests, 2)
