@@ -1,4 +1,4 @@
-#
+#!/usr/bin/env python
 # Database access functions for the logs analysis.
 #
 import psycopg2
